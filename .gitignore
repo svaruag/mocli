@@ -1,0 +1,12 @@
+.DS_Store
+bin/
+dist/
+.coverage/
+*.log
+mo
+entra-app.json
+credentials.json
+credentials-*.json
+config.json
+keyring/
+plans/
