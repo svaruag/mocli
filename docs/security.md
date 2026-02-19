@@ -28,6 +28,7 @@ App registration should request only delegated permissions needed for implemente
 - `Mail.Send`
 - `Calendars.ReadWrite`
 - `Tasks.ReadWrite`
+- `Files.ReadWrite`
 
 ## Operational Controls
 

@@ -31,7 +31,7 @@ mo calendar create \
   --description "calendar smoke check"
 
 mo calendar update <event-id> --summary "Mocli demo (updated)"
-mo calendar delete <event-id> --force
+mo --force calendar delete <event-id>
 ```
 
 ## Tasks: Full Lifecycle
@@ -50,20 +50,60 @@ mo tasks update <task-id> --status inProgress --importance high
 mo tasks complete <task-id>
 
 # delete
-mo tasks delete <task-id> --force
+mo --force tasks delete <task-id>
 ```
 
-## Use Explicit To Do List
+## Drive: Files and Folders
 
 ```bash
-mo tasks list --list-id Tasks --max 50
-mo tasks create --list-id Tasks --title "From explicit list"
+# list/search
+mo drive ls --max 20
+mo drive search "invoice" --max 20
+
+# upload/download
+mo drive upload ./report.txt --conflict rename
+mo drive download <item-id> --out ./report.txt
+
+# organize
+mo drive mkdir "Agent Artifacts"
+mo drive move <item-id> --parent <folder-id>
+mo drive rename <item-id> "report-final.txt"
+mo --force drive delete <item-id>
 ```
+
+## Drive: Sharing and Permissions
+
+```bash
+# list permissions
+mo drive permissions <item-id>
+
+# share to user
+mo drive share <item-id> --to user --email user@example.com --role read
+
+# revoke permission
+mo --force drive unshare <item-id> <permission-id>
+```
+
+## Drive: Discover Drives and Shared Items
+
+```bash
+mo drive drives --max 50
+mo drive shared --max 50
+```
+
+## Comments Limitation
+
+```bash
+mo drive comments <item-id>
+```
+
+`drive comments` currently returns `not_implemented` because Graph v1.0 does not expose general drive-item comments endpoints.
 
 ## Non-Interactive/Agent Pattern
 
 ```bash
 mo --json --no-input --force tasks list --max 20
+mo --json --no-input --force drive ls --max 20
 ```
 
 ## Live Smoke Verification

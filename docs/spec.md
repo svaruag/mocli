@@ -2,7 +2,7 @@
 
 ## Goal
 
-Provide a small, reliable, JSON-first CLI for Outlook-centric Microsoft Graph workflows used by agents.
+Provide a small, reliable, JSON-first CLI for Outlook and OneDrive Microsoft Graph workflows used by agents.
 
 Implemented command groups:
 
@@ -10,13 +10,14 @@ Implemented command groups:
 - `mail`
 - `calendar`
 - `tasks`
+- `drive`
 - `config`
 - `version`
 
 ## Non-Goals
 
 - broad Microsoft 365 tenant administration
-- workload coverage beyond mail/calendar/tasks
+- workload coverage beyond mail/calendar/tasks/drive
 - backwards compatibility guarantees prior to first public release
 
 ## Runtime

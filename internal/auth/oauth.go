@@ -28,6 +28,7 @@ var DefaultScopes = []string{
 	"Mail.Send",
 	"Calendars.ReadWrite",
 	"Tasks.ReadWrite",
+	"Files.ReadWrite",
 }
 
 var newHTTPClient = func(timeout time.Duration) *http.Client {

@@ -10,3 +10,4 @@ credentials-*.json
 config.json
 keyring/
 plans/
+.mocli-internal/

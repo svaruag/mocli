@@ -22,13 +22,28 @@ Optional environment overrides:
 - `SMOKE_TASK_LIST_ID`: force a specific To Do list id
 - `SMOKE_TIMEOUT_SECONDS`: polling timeout per eventual-consistency check (default `60`)
 
+Drive smoke options:
+
+- `SMOKE_DRIVE_ENABLED=1`: enable drive smoke lifecycle
+- `SMOKE_DRIVE_PARENT=<item-id>`: create/upload under a specific folder
+- `SMOKE_DRIVE_SHARE_EMAIL=<addr>`: optionally run share/unshare check
+- `SMOKE_DRIVE_SHARED_CHECK=1`: also call `drive shared` (deprecated Graph endpoint)
+
 ## What It Asserts
+
+Base checks:
 
 - Auth status has a usable token
 - Mail list works, mail get works, send works, sent-item read-back works
 - Tasks list works, create/read/update/complete/delete all work
 - Calendar create/read/update/delete all work
-- Created task/event are cleaned up by the script
+
+Drive checks (when enabled):
+
+- `drive drives` works
+- upload/download/list/get/move/rename/delete lifecycle works
+- permissions listing works
+- comments command currently returns `not_implemented`
 
 ## Recommended Dev Loop
 
@@ -37,10 +52,10 @@ make test
 make smoke-live
 ```
 
+Run the drive smoke checks for behavior-changing updates in `internal/app/drive_cmd.go`, auth scopes, or Graph request logic.
+
 If `mo` is not on `PATH`, point the script explicitly:
 
 ```bash
 MO_BIN=./mo make smoke-live
 ```
-
-Run the live smoke checks after behavior-changing updates in `internal/app`, auth flows, or Graph request logic.

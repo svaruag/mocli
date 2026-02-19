@@ -66,3 +66,16 @@ Exit criteria:
 
 - Regression suite green
 - Release checklist complete
+
+## Phase 6: OneDrive Expansion (Done)
+
+- Added `drive` command group for files/folders lifecycle
+- Added permissions and sharing commands (`permissions`, `share`, `unshare`)
+- Added drive discovery commands (`drives`, `shared`)
+- Added command stubs for comments with explicit `not_implemented` status
+
+Exit criteria:
+
+- Drive command surface documented in command reference
+- Unit tests and build checks green
+- Smoke script supports optional drive smoke lifecycle

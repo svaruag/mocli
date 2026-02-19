@@ -47,7 +47,7 @@ mo --json --no-input --force calendar delete <event-id>
 Limit top-level command groups available to an agent:
 
 ```bash
-export MO_ENABLE_COMMANDS=mail,calendar,tasks
+export MO_ENABLE_COMMANDS=mail,calendar,tasks,drive
 ```
 
 Blocked command attempts return `command_disabled` with exit code `6`.

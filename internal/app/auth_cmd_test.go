@@ -29,3 +29,20 @@ func TestNormalizeAuthAddArgsEmailOnlyUnchanged(t *testing.T) {
 		t.Fatalf("normalizeOnePositionalArgs(%v) = %v, want unchanged", in, got)
 	}
 }
+
+func TestNormalizeTwoPositionalArgsIDsFirstWithFlags(t *testing.T) {
+	in := []string{"item-1", "perm-2", "--drive", "drive-3"}
+	got := normalizeTwoPositionalArgs(in)
+	want := []string{"--drive", "drive-3", "item-1", "perm-2"}
+	if !reflect.DeepEqual(got, want) {
+		t.Fatalf("normalizeTwoPositionalArgs(%v) = %v, want %v", in, got, want)
+	}
+}
+
+func TestNormalizeTwoPositionalArgsUnchangedWithoutFlags(t *testing.T) {
+	in := []string{"item-1", "perm-2"}
+	got := normalizeTwoPositionalArgs(in)
+	if !reflect.DeepEqual(got, in) {
+		t.Fatalf("normalizeTwoPositionalArgs(%v) = %v, want unchanged", in, got)
+	}
+}

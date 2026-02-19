@@ -27,6 +27,18 @@ Fix:
 mo auth credentials ./entra-app.json
 ```
 
+## New Scope Added, Command Still Fails
+
+Symptoms:
+
+- drive commands fail with `permission_denied` after app permissions were updated
+
+Fix:
+
+```bash
+mo auth add <email> --device --force-consent
+```
+
 ## `AADSTS50020` Tenant Mismatch
 
 Symptoms:
@@ -88,8 +100,28 @@ Symptoms:
 Fix:
 
 ```bash
-export MO_ENABLE_COMMANDS=mail,calendar,tasks,auth,config
+export MO_ENABLE_COMMANDS=mail,calendar,tasks,drive,auth,config
 ```
+
+## Drive Comments Not Implemented
+
+Symptoms:
+
+- `mo drive comments ...` returns `not_implemented`
+
+Cause:
+
+- Microsoft Graph v1.0 does not expose general file-comments endpoints for drive items.
+
+## Drive Shared Endpoint Warnings
+
+Symptoms:
+
+- `mo drive shared` includes a deprecation warning
+
+Cause:
+
+- Graph `sharedWithMe` is deprecated by Microsoft and may degrade.
 
 ## Browser Redirect Issues
 

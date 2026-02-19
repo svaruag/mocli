@@ -76,6 +76,12 @@ export MO_KEYRING_BACKEND=file
 export MO_KEYRING_PASSWORD='strong-password'
 ```
 
+If app permissions change (for example enabling Drive scope), re-consent:
+
+```bash
+mo auth add <email> --device --force-consent
+```
+
 ## Auth Commands
 
 ```bash

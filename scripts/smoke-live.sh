@@ -11,6 +11,10 @@ fi
 SMOKE_TIMEOUT_SECONDS="${SMOKE_TIMEOUT_SECONDS:-60}"
 SMOKE_TO_EMAIL="${SMOKE_TO_EMAIL:-}"
 SMOKE_TASK_LIST_ID="${SMOKE_TASK_LIST_ID:-}"
+SMOKE_DRIVE_ENABLED="${SMOKE_DRIVE_ENABLED:-0}"
+SMOKE_DRIVE_PARENT="${SMOKE_DRIVE_PARENT:-}"
+SMOKE_DRIVE_SHARE_EMAIL="${SMOKE_DRIVE_SHARE_EMAIL:-}"
+SMOKE_DRIVE_SHARED_CHECK="${SMOKE_DRIVE_SHARED_CHECK:-0}"
 
 log() {
   printf '[smoke] %s\n' "$*"
@@ -36,6 +40,35 @@ run_mo_json() {
   printf '%s' "$out"
 }
 
+run_mo_error_json() {
+  local stdout_file stderr_file out err
+  stdout_file="$(mktemp /tmp/mo-smoke-stdout-XXXXXX.log)"
+  stderr_file="$(mktemp /tmp/mo-smoke-stderr-XXXXXX.log)"
+
+  if "$MO_BIN" --json --force "$@" >"$stdout_file" 2>"$stderr_file"; then
+    rm -f "$stdout_file" "$stderr_file"
+    fail "expected command to fail but it succeeded: $MO_BIN --json --force $*"
+  fi
+
+  out="$(cat "$stdout_file")"
+  err="$(cat "$stderr_file")"
+  rm -f "$stdout_file" "$stderr_file"
+
+  if [[ -n "$err" ]]; then
+    sed 's/^/[mo stderr] /' <<<"$err" >&2
+  fi
+
+  if jq -e '.error.code | type == "string"' >/dev/null <<<"$out"; then
+    printf '%s' "$out"
+    return 0
+  fi
+  if jq -e '.error.code | type == "string"' >/dev/null <<<"$err"; then
+    printf '%s' "$err"
+    return 0
+  fi
+
+  fail "expected JSON error output for command: $*"
+}
 assert_jq() {
   local json="$1"
   local expr="$2"
@@ -107,6 +140,10 @@ require_cmd date
 task_id=""
 task_list_id=""
 event_id=""
+drive_item_id=""
+drive_folder_id=""
+drive_tmp_file=""
+drive_download_file=""
 
 cleanup() {
   set +e
@@ -119,6 +156,18 @@ cleanup() {
   fi
   if [[ -n "$event_id" ]]; then
     "$MO_BIN" --json --force calendar delete "$event_id" >/dev/null 2>&1 || true
+  fi
+  if [[ -n "$drive_item_id" ]]; then
+    "$MO_BIN" --json --force drive delete "$drive_item_id" >/dev/null 2>&1 || true
+  fi
+  if [[ -n "$drive_folder_id" ]]; then
+    "$MO_BIN" --json --force drive delete "$drive_folder_id" >/dev/null 2>&1 || true
+  fi
+  if [[ -n "$drive_tmp_file" ]]; then
+    rm -f "$drive_tmp_file" >/dev/null 2>&1 || true
+  fi
+  if [[ -n "$drive_download_file" ]]; then
+    rm -f "$drive_download_file" >/dev/null 2>&1 || true
   fi
 }
 trap cleanup EXIT
@@ -249,5 +298,92 @@ if ! wait_for_calendar_absent "$deleted_event_id" "$cal_window_from" "$cal_windo
   fail 'deleted calendar event still appears in list after timeout'
 fi
 log 'PASS: deleted calendar event no longer appears in list output'
+
+if [[ "$SMOKE_DRIVE_ENABLED" == "1" || "$SMOKE_DRIVE_ENABLED" == "true" ]]; then
+  require_cmd cmp
+  log "Testing drive commands"
+
+  drive_list_out=$(run_mo_json drive drives --max 20)
+  assert_jq "$drive_list_out" '.items | type == "array"' 'drive drives returns an items array'
+
+  drive_tmp_file=$(mktemp /tmp/mo-smoke-drive-src-XXXXXX.txt)
+  drive_download_file=$(mktemp /tmp/mo-smoke-drive-dst-XXXXXX.txt)
+  printf 'mo smoke drive %s\n' "$(date -u +%Y%m%dT%H%M%SZ)" >"$drive_tmp_file"
+
+  folder_name="mo smoke folder $(date -u +%Y%m%dT%H%M%SZ)"
+  mkdir_args=(drive mkdir "$folder_name")
+  if [[ -n "$SMOKE_DRIVE_PARENT" ]]; then
+    mkdir_args+=(--parent "$SMOKE_DRIVE_PARENT")
+  fi
+  created_folder=$(run_mo_json "${mkdir_args[@]}")
+  assert_jq "$created_folder" '.id | type == "string" and (. | length > 0)' 'drive mkdir returns folder id'
+  drive_folder_id=$(jq -r '.id' <<<"$created_folder")
+
+  upload_name="mo-smoke-upload-$(date -u +%Y%m%dT%H%M%SZ).txt"
+  upload_args=(drive upload "$drive_tmp_file" --name "$upload_name" --conflict fail)
+  if [[ -n "$SMOKE_DRIVE_PARENT" ]]; then
+    upload_args+=(--parent "$SMOKE_DRIVE_PARENT")
+  fi
+  uploaded_item=$(run_mo_json "${upload_args[@]}")
+  assert_jq "$uploaded_item" '.id | type == "string" and (. | length > 0)' 'drive upload returns item id'
+  drive_item_id=$(jq -r '.id' <<<"$uploaded_item")
+
+  ls_args=(drive ls --max 200)
+  if [[ -n "$SMOKE_DRIVE_PARENT" ]]; then
+    ls_args+=(--parent "$SMOKE_DRIVE_PARENT")
+  fi
+  listed_items=$(run_mo_json "${ls_args[@]}")
+  assert_jq "$listed_items" '.items | any(.id == $id)' 'uploaded item appears in drive ls results' --arg id "$drive_item_id"
+
+  get_item=$(run_mo_json drive get "$drive_item_id")
+  assert_jq "$get_item" '.id == $id' 'drive get returns requested item id' --arg id "$drive_item_id"
+
+  downloaded_item=$(run_mo_json drive download "$drive_item_id" --out "$drive_download_file")
+  assert_jq "$downloaded_item" '.downloaded == true' 'drive download reports success'
+  if ! cmp -s "$drive_tmp_file" "$drive_download_file"; then
+    fail 'downloaded drive file content does not match uploaded content'
+  fi
+  log 'PASS: drive download content matches uploaded content'
+
+  run_mo_json drive move "$drive_item_id" --parent "$drive_folder_id" >/dev/null
+  moved_list=$(run_mo_json drive ls --parent "$drive_folder_id" --max 200)
+  assert_jq "$moved_list" '.items | any(.id == $id)' 'drive move places item under destination folder' --arg id "$drive_item_id"
+
+  renamed_name="${upload_name%.txt}-renamed.txt"
+  run_mo_json drive rename "$drive_item_id" "$renamed_name" >/dev/null
+  renamed_item=$(run_mo_json drive get "$drive_item_id")
+  assert_jq "$renamed_item" '.name == $name' 'drive rename updates item name' --arg name "$renamed_name"
+
+  perms_list=$(run_mo_json drive permissions "$drive_item_id" --max 50)
+  assert_jq "$perms_list" '.items | type == "array"' 'drive permissions returns an items array'
+
+  comments_err=$(run_mo_error_json drive comments "$drive_item_id")
+  assert_jq "$comments_err" '.error.code == "not_implemented"' 'drive comments returns not_implemented'
+
+  if [[ -n "$SMOKE_DRIVE_SHARE_EMAIL" ]]; then
+    share_out=$(run_mo_json drive share "$drive_item_id" --to user --email "$SMOKE_DRIVE_SHARE_EMAIL" --role read)
+    assert_jq "$share_out" '.shared == true' 'drive share reports success'
+    shared_perm_id=$(jq -r '.value[0].id // .permission.id // .id // empty' <<<"$share_out")
+    if [[ -n "$shared_perm_id" ]]; then
+      unshare_out=$(run_mo_json drive unshare "$drive_item_id" "$shared_perm_id")
+      assert_jq "$unshare_out" '.unshared == true' 'drive unshare reports success'
+    else
+      log 'Share response did not include a permission id; skipping unshare assertion'
+    fi
+  fi
+
+  if [[ "$SMOKE_DRIVE_SHARED_CHECK" == "1" || "$SMOKE_DRIVE_SHARED_CHECK" == "true" ]]; then
+    shared_out=$(run_mo_json drive shared --max 20)
+    assert_jq "$shared_out" '.items | type == "array"' 'drive shared returns an items array'
+  fi
+
+  deleted_drive_item=$(run_mo_json drive delete "$drive_item_id")
+  assert_jq "$deleted_drive_item" '.deleted == true' 'drive delete removes uploaded item'
+  drive_item_id=""
+
+  deleted_drive_folder=$(run_mo_json drive delete "$drive_folder_id")
+  assert_jq "$deleted_drive_folder" '.deleted == true' 'drive delete removes created folder'
+  drive_folder_id=""
+fi
 
 log 'All live smoke checks passed.'

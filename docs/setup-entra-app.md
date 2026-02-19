@@ -38,6 +38,7 @@ Add delegated Microsoft Graph permissions:
 - `Mail.Send`
 - `Calendars.ReadWrite`
 - `Tasks.ReadWrite`
+- `Files.ReadWrite`
 
 OIDC scopes are requested by Mocli during login:
 
@@ -70,6 +71,12 @@ Tenant values:
 mo auth credentials ./entra-app.json
 mo auth add you@outlook.com --device
 mo auth status
+```
+
+If you add Graph permissions later, re-consent to mint a token with new scopes:
+
+```bash
+mo auth add you@outlook.com --device --force-consent
 ```
 
 ## 7. Common Tenant Errors

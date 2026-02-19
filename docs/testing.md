@@ -24,6 +24,10 @@ Optional smoke env overrides:
 - `SMOKE_TO_EMAIL`
 - `SMOKE_TASK_LIST_ID`
 - `SMOKE_TIMEOUT_SECONDS`
+- `SMOKE_DRIVE_ENABLED`
+- `SMOKE_DRIVE_PARENT`
+- `SMOKE_DRIVE_SHARE_EMAIL`
+- `SMOKE_DRIVE_SHARED_CHECK`
 
 Detailed smoke behavior: `docs/smoke-tests.md`.
 
@@ -42,4 +46,4 @@ For behavior changes:
 - Graph error mapping and retries
 - flag/argument validation
 - JSON contract stability
-- mail/calendar/tasks core workflows
+- mail/calendar/tasks/drive core workflows

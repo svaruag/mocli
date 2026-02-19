@@ -21,7 +21,7 @@ Build a focused CLI with:
 ## Non-Goals
 
 - Full Microsoft 365 tenant management
-- Broad workload support beyond mail/calendar/tasks (v1)
+- Broad workload support beyond mail/calendar/tasks/drive (v1)
 - Feature parity with large multi-domain CLIs
 
 ## Quality Bar
@@ -33,5 +33,5 @@ Build a focused CLI with:
 ## Success Criteria (MVP)
 
 - Agent can authenticate once and run continuously via token refresh
-- Agent can execute core mail/calendar/tasks commands without manual intervention
+- Agent can execute core mail/calendar/tasks/drive commands without manual intervention
 - Reproducible behavior under retries, paging, and common Graph errors

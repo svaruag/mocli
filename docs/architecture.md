@@ -13,7 +13,7 @@
 ## CLI Shape
 
 - Binary name: `mo`
-- Command groups: `auth`, `mail`, `calendar`, `tasks`, `config`, `version`
+- Command groups: `auth`, `mail`, `calendar`, `tasks`, `drive`, `config`, `version`
 - Style target: close to `gogcli` command ergonomics
 - Improvement over baseline: stricter cross-command flag consistency (`--max`, `--page`, `--from`, `--to`)
 

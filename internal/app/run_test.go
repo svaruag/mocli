@@ -196,3 +196,16 @@ func fakeEnv(values map[string]string) func(string) (string, bool) {
 		return v, ok
 	}
 }
+
+func TestRunDriveHelpCommand(t *testing.T) {
+	var out bytes.Buffer
+	var errOut bytes.Buffer
+
+	exit := Run([]string{"drive", "help"}, &out, &errOut, fakeEnv(nil))
+	if exit != exitcode.Success {
+		t.Fatalf("expected success exit code, got %d", exit)
+	}
+	if !strings.Contains(out.String(), "drive commands:") {
+		t.Fatalf("expected drive help output, got %q", out.String())
+	}
+}

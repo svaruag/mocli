@@ -81,6 +81,8 @@ func Run(args []string, stdout, stderr io.Writer, lookup config.LookupFunc) int 
 		return runCalendar(rt, rest)
 	case "tasks":
 		return runTasks(rt, rest)
+	case "drive":
+		return runDrive(rt, rest)
 	case "config":
 		return runConfig(rt, rest)
 	default:
@@ -198,7 +200,7 @@ func parseAllowlist(raw string) map[string]struct{} {
 
 func isKnownCommand(cmd string) bool {
 	switch cmd {
-	case "auth", "mail", "calendar", "tasks", "config", "version":
+	case "auth", "mail", "calendar", "tasks", "drive", "config", "version":
 		return true
 	default:
 		return false
@@ -222,6 +224,7 @@ Commands:
   mail       Mailbox commands
   calendar   Calendar commands
   tasks      Task commands
+  drive      OneDrive commands
   config     Local configuration commands
   version    Print version
 
@@ -277,6 +280,27 @@ Usage:
   mo tasks update <task-id> [--list-id ID] [--title ...] [--body ...] [--due ...] [--status ...] [--importance ...]
   mo tasks complete <task-id> [--list-id ID]
   mo tasks delete <task-id> [--list-id ID]`) + "\n"
+	case "drive":
+		return strings.TrimSpace(`drive commands: ls, search, get, upload, download, mkdir, rename, move, delete, permissions, share, unshare, comments, comment, drives, shared
+
+Usage:
+  mo drive ls [--parent ID] [--max N] [--page TOKEN] [--drive DRIVE_ID]
+  mo drive search <text> [--max N] [--page TOKEN] [--drive DRIVE_ID]
+  mo drive get <item-id> [--drive DRIVE_ID]
+  mo drive upload <local-path> [--parent ID] [--name NAME] [--conflict fail|rename|replace] [--drive DRIVE_ID]
+  mo drive download <item-id> [--out PATH] [--drive DRIVE_ID]
+  mo drive mkdir <name> [--parent ID] [--drive DRIVE_ID]
+  mo drive rename <item-id> <new-name> [--drive DRIVE_ID]
+  mo drive move <item-id> --parent <dest-id> [--drive DRIVE_ID]
+  mo drive delete <item-id> [--permanent] [--drive DRIVE_ID]
+  mo drive permissions <item-id> [--max N] [--page TOKEN] [--drive DRIVE_ID]
+  mo drive share <item-id> --to user|domain|anyone [--email ...] [--domain ...] --role read|write [--send-invite] [--drive DRIVE_ID]
+  mo drive unshare <item-id> <permission-id> [--drive DRIVE_ID]
+  mo drive comments <item-id> [--max N] [--page TOKEN] [--drive DRIVE_ID]
+  mo drive comment add <item-id> --text <value> [--drive DRIVE_ID]
+  mo drive comment delete <item-id> <comment-id> [--drive DRIVE_ID]
+  mo drive drives [--max N] [--page TOKEN]
+  mo drive shared [--max N] [--page TOKEN]`) + "\n"
 	case "config":
 		return strings.TrimSpace(`config commands: list, get, set, unset, path
 

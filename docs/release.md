@@ -15,6 +15,7 @@
 - [ ] mail send/read flow verified
 - [ ] calendar create/update/delete flow verified
 - [ ] tasks create/update/complete/delete flow verified
+- [ ] drive lifecycle and permissions flow verified (when enabled)
 
 ### Contract Checks
 
