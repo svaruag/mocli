@@ -4,6 +4,7 @@ import (
 	"errors"
 	"os"
 	"path/filepath"
+	"runtime"
 	"testing"
 )
 
@@ -79,5 +80,23 @@ func TestLoadCredentialsReturnsNotExistForNamedClientWithoutFile(t *testing.T) {
 	}
 	if !errors.Is(err, os.ErrNotExist) {
 		t.Fatalf("expected os.ErrNotExist, got %v", err)
+	}
+}
+
+func TestLoadCredentialsRejectsInsecureFilePermissions(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("permission checks are skipped on windows")
+	}
+
+	tmp := t.TempDir()
+	t.Setenv("MO_CONFIG_DIR", tmp)
+	path := filepath.Join(tmp, "credentials.json")
+	if err := os.WriteFile(path, []byte(`{"client_id":"file-client","tenant":"common"}`), 0o644); err != nil {
+		t.Fatalf("write credentials file: %v", err)
+	}
+
+	_, err := LoadCredentials("default")
+	if err == nil {
+		t.Fatalf("expected insecure-permissions error")
 	}
 }

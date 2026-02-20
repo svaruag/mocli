@@ -19,11 +19,16 @@ import (
 	"time"
 
 	"github.com/svaruag/mocli/internal/config"
+	"golang.org/x/crypto/argon2"
 )
 
 const (
 	serviceName        = "mocli"
 	defaultBackendMode = "auto"
+	argon2TimeCost     = 2
+	argon2MemoryKiB    = 64 * 1024
+	argon2Threads      = 1
+	argon2KeyLength    = 32
 )
 
 var ErrNotFound = errors.New("secret not found")
@@ -246,7 +251,7 @@ func (b *fileBackend) Put(key string, value []byte) error {
 	if _, err := rand.Read(nonce); err != nil {
 		return fmt.Errorf("read nonce: %w", err)
 	}
-	block, err := aes.NewCipher(deriveKey(b.password, salt))
+	block, err := aes.NewCipher(deriveKeyArgon2id(b.password, salt))
 	if err != nil {
 		return fmt.Errorf("new cipher: %w", err)
 	}
@@ -296,7 +301,7 @@ func (b *fileBackend) Get(key string) ([]byte, error) {
 		return nil, fmt.Errorf("decode ciphertext: %w", err)
 	}
 
-	block, err := aes.NewCipher(deriveKey(b.password, salt))
+	block, err := aes.NewCipher(deriveKeyArgon2id(b.password, salt))
 	if err != nil {
 		return nil, fmt.Errorf("new cipher: %w", err)
 	}
@@ -327,9 +332,13 @@ func (b *fileBackend) pathForKey(key string) string {
 	return filepath.Join(b.dir, hex.EncodeToString(digest[:])+".enc")
 }
 
-func deriveKey(password string, salt []byte) []byte {
-	h := sha256.New()
-	h.Write([]byte(password))
-	h.Write(salt)
-	return h.Sum(nil)
+func deriveKeyArgon2id(password string, salt []byte) []byte {
+	return argon2.IDKey(
+		[]byte(password),
+		salt,
+		argon2TimeCost,
+		argon2MemoryKiB,
+		argon2Threads,
+		argon2KeyLength,
+	)
 }

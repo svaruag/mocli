@@ -34,6 +34,12 @@ type graphErrorEnvelope struct {
 	} `json:"error"`
 }
 
+const (
+	defaultGraphBaseURL = "https://graph.microsoft.com"
+	defaultAuthBaseURL  = "https://login.microsoftonline.com"
+	maxRetryAfter       = 60 * time.Second
+)
+
 func (rt *runtimeState) selectedClient(cfg config.AppConfig) string {
 	client := strings.TrimSpace(rt.globals.Client)
 	if client != "" {
@@ -122,21 +128,28 @@ func (rt *runtimeState) accessToken(id identityContext) (string, error) {
 	}
 
 	if strings.TrimSpace(refreshed.RefreshToken) != "" && refreshed.RefreshToken != tok.RefreshToken {
-		_ = id.Store.PutToken(id.Client, id.Account, secrets.Token{
+		if err := id.Store.PutToken(id.Client, id.Account, secrets.Token{
 			RefreshToken: refreshed.RefreshToken,
 			Scope:        refreshed.Scope,
-		})
+		}); err != nil {
+			return "", authRequiredError(
+				"could not persist refreshed token",
+				fmt.Sprintf("Refresh token rotated but save failed (%v). Re-authenticate with 'mo auth add %s' after fixing secrets backend.", err, id.Account),
+			)
+		}
 	}
 	return refreshed.AccessToken, nil
 }
 
 func (rt *runtimeState) graphRequest(id identityContext, method, path string, query url.Values, body any, out any) (string, error) {
+	rt.warnEndpointOverrides()
+
 	accessToken, err := rt.accessToken(id)
 	if err != nil {
 		return "", err
 	}
 
-	base := strings.TrimRight(config.String(rt.lookup, "MO_GRAPH_BASE_URL", "https://graph.microsoft.com"), "/")
+	base := strings.TrimRight(config.String(rt.lookup, "MO_GRAPH_BASE_URL", defaultGraphBaseURL), "/")
 	u := base + "/" + strings.TrimLeft(path, "/")
 	if len(query) > 0 {
 		u += "?" + query.Encode()
@@ -235,7 +248,11 @@ func retryDelay(resp *http.Response, attempt int) time.Duration {
 	if resp != nil {
 		if v := strings.TrimSpace(resp.Header.Get("Retry-After")); v != "" {
 			if secs, err := strconv.Atoi(v); err == nil && secs > 0 {
-				return time.Duration(secs) * time.Second
+				delay := time.Duration(secs) * time.Second
+				if delay > maxRetryAfter {
+					return maxRetryAfter
+				}
+				return delay
 			}
 		}
 	}
@@ -252,7 +269,7 @@ func backoffDuration(attempt int) time.Duration {
 }
 
 func (rt *runtimeState) graphGetMeEmail(accessToken string) (string, error) {
-	base := strings.TrimRight(config.String(rt.lookup, "MO_GRAPH_BASE_URL", "https://graph.microsoft.com"), "/")
+	base := strings.TrimRight(config.String(rt.lookup, "MO_GRAPH_BASE_URL", defaultGraphBaseURL), "/")
 	u := base + "/v1.0/me?$select=userPrincipalName,mail"
 
 	req, err := http.NewRequest(http.MethodGet, u, nil)
@@ -287,6 +304,27 @@ func (rt *runtimeState) graphGetMeEmail(accessToken string) (string, error) {
 		return "", errors.New("profile response missing email")
 	}
 	return email, nil
+}
+
+func (rt *runtimeState) warnEndpointOverrides() {
+	if rt.endpointWarningsShown {
+		return
+	}
+	rt.endpointWarningsShown = true
+
+	rt.warnURLOverride("MO_AUTH_BASE_URL", defaultAuthBaseURL)
+	rt.warnURLOverride("MO_GRAPH_BASE_URL", defaultGraphBaseURL)
+}
+
+func (rt *runtimeState) warnURLOverride(envKey, defaultValue string) {
+	current := strings.TrimSpace(config.String(rt.lookup, envKey, defaultValue))
+	if current == "" {
+		return
+	}
+	if strings.TrimRight(current, "/") == strings.TrimRight(defaultValue, "/") {
+		return
+	}
+	_, _ = fmt.Fprintf(rt.stderr, "warning: %s is set to non-default endpoint %s\n", envKey, current)
 }
 
 func mapGraphError(status int, graphCode, graphMessage string) error {

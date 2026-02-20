@@ -36,6 +36,16 @@ func TestResolveDriveDownloadPathFallsBackToID(t *testing.T) {
 	}
 }
 
+func TestResolveDriveDownloadPathSanitizesName(t *testing.T) {
+	got, err := resolveDriveDownloadPath("", "../../../etc/passwd", "id1")
+	if err != nil {
+		t.Fatalf("resolveDriveDownloadPath returned error: %v", err)
+	}
+	if got != "passwd" {
+		t.Fatalf("resolveDriveDownloadPath = %q, want passwd", got)
+	}
+}
+
 func TestDriveKind(t *testing.T) {
 	if got := driveKind(map[string]any{"folder": map[string]any{}}); got != "folder" {
 		t.Fatalf("driveKind(folder) = %q", got)

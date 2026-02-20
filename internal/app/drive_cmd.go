@@ -1,7 +1,6 @@
 package app
 
 import (
-	"bytes"
 	"encoding/json"
 	"flag"
 	"fmt"
@@ -267,11 +266,18 @@ func runDriveUpload(rt *runtimeState, id identityContext, args []string) int {
 	if behavior != "fail" && behavior != "rename" && behavior != "replace" {
 		return rt.failErr(usageError("invalid --conflict", "Allowed values: fail, rename, replace"))
 	}
-	data, err := os.ReadFile(localPath)
+	info, err := os.Stat(localPath)
 	if err != nil {
 		return rt.failErr(usageError("failed to read local file", err.Error()))
 	}
-	if len(data) > driveSmallUploadLimitBytes {
+	if info.IsDir() {
+		return rt.failErr(usageError("local path must be a file", "Provide a file path for upload."))
+	}
+	size := info.Size()
+	if size < 0 {
+		return rt.failErr(usageError("invalid local file size", "Unable to determine upload size."))
+	}
+	if size > driveSmallUploadLimitBytes {
 		return rt.failErr(usageError("file too large for simple upload", "Limit is 250MB for this command. Resumable upload is planned."))
 	}
 
@@ -303,8 +309,14 @@ func runDriveUpload(rt *runtimeState, id identityContext, args []string) int {
 		return rt.failErr(transientError("upload initialization failed", "graph response missing created item id"))
 	}
 
+	f, err := os.Open(localPath)
+	if err != nil {
+		return rt.failErr(usageError("failed to open local file", err.Error()))
+	}
+	defer f.Close()
+
 	uploadPath := base + "/items/" + url.PathEscape(createdID) + "/content"
-	rawResp, err := rt.driveRawRequest(id, http.MethodPut, uploadPath, nil, bytes.NewReader(data), "application/octet-stream")
+	rawResp, err := rt.driveRawRequest(id, http.MethodPut, uploadPath, nil, f, "application/octet-stream", size)
 	if err != nil {
 		return rt.failErr(err)
 	}
@@ -358,7 +370,7 @@ func runDriveDownload(rt *runtimeState, id identityContext, args []string) int {
 		return rt.failErr(transientError("failed to create output directory", mkErr.Error()))
 	}
 
-	rawResp, err := rt.driveRawRequest(id, http.MethodGet, driveItemPath(*drive, itemID)+"/content", nil, nil, "")
+	rawResp, err := rt.driveRawRequest(id, http.MethodGet, driveItemPath(*drive, itemID)+"/content", nil, nil, "", -1)
 	if err != nil {
 		return rt.failErr(err)
 	}
@@ -848,9 +860,9 @@ func asInt64(v any) int64 {
 }
 
 func resolveDriveDownloadPath(outPath, itemName, itemID string) (string, error) {
-	name := strings.TrimSpace(itemName)
+	name := sanitizeDriveName(itemName)
 	if name == "" {
-		name = strings.TrimSpace(itemID)
+		name = sanitizeDriveName(itemID)
 	}
 	if name == "" {
 		name = "download.bin"
@@ -864,7 +876,18 @@ func resolveDriveDownloadPath(outPath, itemName, itemID string) (string, error) 
 	return outPath, nil
 }
 
-func (rt *runtimeState) driveRawRequest(id identityContext, method, path string, query url.Values, body io.Reader, contentType string) (*http.Response, error) {
+func sanitizeDriveName(v string) string {
+	name := strings.TrimSpace(v)
+	name = strings.ReplaceAll(name, "\\", "/")
+	name = filepath.Base(name)
+	name = strings.TrimSpace(name)
+	if name == "" || name == "." || name == ".." {
+		return ""
+	}
+	return name
+}
+
+func (rt *runtimeState) driveRawRequest(id identityContext, method, path string, query url.Values, body io.Reader, contentType string, contentLength int64) (*http.Response, error) {
 	accessToken, err := rt.accessToken(id)
 	if err != nil {
 		return nil, err
@@ -883,6 +906,9 @@ func (rt *runtimeState) driveRawRequest(id identityContext, method, path string,
 	req.Header.Set("Accept", "application/json")
 	if strings.TrimSpace(contentType) != "" {
 		req.Header.Set("Content-Type", contentType)
+	}
+	if contentLength >= 0 {
+		req.ContentLength = contentLength
 	}
 
 	httpClient := &http.Client{Timeout: 60 * time.Second}

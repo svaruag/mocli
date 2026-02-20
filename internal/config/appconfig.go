@@ -28,11 +28,18 @@ func LoadAppConfig() (AppConfig, error) {
 	if err != nil {
 		return AppConfig{}, err
 	}
-	data, err := os.ReadFile(path)
+	info, err := os.Stat(path)
 	if err != nil {
 		if errors.Is(err, os.ErrNotExist) {
 			return AppConfig{}, nil
 		}
+		return AppConfig{}, fmt.Errorf("read config: %w", err)
+	}
+	if err := validatePrivateFile(path, info.Mode()); err != nil {
+		return AppConfig{}, err
+	}
+	data, err := os.ReadFile(path)
+	if err != nil {
 		return AppConfig{}, fmt.Errorf("read config: %w", err)
 	}
 	var cfg AppConfig

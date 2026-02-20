@@ -1,6 +1,10 @@
 package app
 
-import "testing"
+import (
+	"net/http"
+	"testing"
+	"time"
+)
 
 func TestExtractPageToken(t *testing.T) {
 	tests := []struct {
@@ -32,5 +36,29 @@ func TestExtractPageToken(t *testing.T) {
 				t.Fatalf("extractPageToken(%q) = %q, want %q", tt.in, got, tt.want)
 			}
 		})
+	}
+}
+
+func TestRetryDelayCapsRetryAfter(t *testing.T) {
+	resp := &http.Response{
+		Header: make(http.Header),
+	}
+	resp.Header.Set("Retry-After", "3600")
+
+	got := retryDelay(resp, 1)
+	if got != maxRetryAfter {
+		t.Fatalf("retryDelay cap = %s, want %s", got, maxRetryAfter)
+	}
+}
+
+func TestRetryDelayUsesRetryAfterWithinCap(t *testing.T) {
+	resp := &http.Response{
+		Header: make(http.Header),
+	}
+	resp.Header.Set("Retry-After", "5")
+
+	got := retryDelay(resp, 1)
+	if got != 5*time.Second {
+		t.Fatalf("retryDelay = %s, want 5s", got)
 	}
 }

@@ -8,6 +8,7 @@ import (
 	"io"
 	"net"
 	"net/http"
+	"net/url"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -153,6 +154,8 @@ func runAuthCredentialsList(rt *runtimeState) int {
 }
 
 func runAuthAdd(rt *runtimeState, args []string) int {
+	rt.warnEndpointOverrides()
+
 	fs := flag.NewFlagSet("auth add", flag.ContinueOnError)
 	fs.SetOutput(io.Discard)
 	device := fs.Bool("device", false, "Device code flow")
@@ -453,10 +456,18 @@ func runAuthRemove(rt *runtimeState, args []string) int {
 }
 
 func openBrowser(targetURL string) error {
+	u, err := url.Parse(strings.TrimSpace(targetURL))
+	if err != nil || (u.Scheme != "http" && u.Scheme != "https") {
+		return errors.New("invalid browser URL")
+	}
+	safeURL := u.String()
+	quotedURL := `"` + strings.ReplaceAll(safeURL, `"`, `%22`) + `"`
+
 	commands := [][]string{
-		{"xdg-open", targetURL},
-		{"open", targetURL},
-		{"cmd", "/c", "start", targetURL},
+		{"xdg-open", safeURL},
+		{"open", safeURL},
+		{"rundll32", "url.dll,FileProtocolHandler", safeURL},
+		{"cmd", "/c", "start", "", quotedURL},
 	}
 	for _, c := range commands {
 		if _, err := exec.LookPath(c[0]); err != nil {

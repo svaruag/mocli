@@ -37,6 +37,8 @@ type runtimeState struct {
 	stdout  io.Writer
 	stderr  io.Writer
 	lookup  config.LookupFunc
+
+	endpointWarningsShown bool
 }
 
 func Run(args []string, stdout, stderr io.Writer, lookup config.LookupFunc) int {

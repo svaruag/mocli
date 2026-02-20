@@ -33,6 +33,13 @@ func LoadCredentials(client string) (Credentials, error) {
 	if err != nil {
 		return Credentials{}, err
 	}
+	info, err := os.Stat(path)
+	if err != nil {
+		return Credentials{}, fmt.Errorf("read credentials: %w", err)
+	}
+	if err := validatePrivateFile(path, info.Mode()); err != nil {
+		return Credentials{}, err
+	}
 	data, err := os.ReadFile(path)
 	if err != nil {
 		return Credentials{}, fmt.Errorf("read credentials: %w", err)

@@ -11,8 +11,6 @@ import (
 	"io"
 	"net/http"
 	"net/url"
-	"os"
-	"path/filepath"
 	"strings"
 	"time"
 
@@ -324,54 +322,6 @@ func exchangeToken(ctx context.Context, creds config.Credentials, form url.Value
 		return TokenResponse{}, errors.New("token response missing access_token")
 	}
 	return token, nil
-}
-
-func SaveSessionState(session Session) error {
-	dir, err := config.OAuthStateDir()
-	if err != nil {
-		return err
-	}
-	if err := os.MkdirAll(dir, 0o700); err != nil {
-		return fmt.Errorf("ensure oauth state dir: %w", err)
-	}
-	data, err := json.Marshal(session)
-	if err != nil {
-		return fmt.Errorf("marshal session state: %w", err)
-	}
-	path := filepath.Join(dir, "session-"+session.State+".json")
-	if err := os.WriteFile(path, data, 0o600); err != nil {
-		return fmt.Errorf("write session state: %w", err)
-	}
-	return nil
-}
-
-func LoadSessionState(state string) (Session, error) {
-	dir, err := config.OAuthStateDir()
-	if err != nil {
-		return Session{}, err
-	}
-	path := filepath.Join(dir, "session-"+state+".json")
-	data, err := os.ReadFile(path)
-	if err != nil {
-		return Session{}, fmt.Errorf("read session state: %w", err)
-	}
-	var session Session
-	if err := json.Unmarshal(data, &session); err != nil {
-		return Session{}, fmt.Errorf("parse session state: %w", err)
-	}
-	if time.Now().UTC().After(session.ExpiresAt) {
-		_ = os.Remove(path)
-		return Session{}, errors.New("session state expired")
-	}
-	return session, nil
-}
-
-func DeleteSessionState(state string) {
-	dir, err := config.OAuthStateDir()
-	if err != nil {
-		return
-	}
-	_ = os.Remove(filepath.Join(dir, "session-"+state+".json"))
 }
 
 func ParseRedirectURL(raw string) (code string, state string, err error) {
