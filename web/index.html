@@ -1,0 +1,167 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>mocli | terminal-native Outlook + OneDrive automation</title>
+    <meta
+      name="description"
+      content="mocli is a terminal-native CLI for Outlook mail, calendar, tasks, and OneDrive workflows."
+    />
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <div class="scan" aria-hidden="true"></div>
+
+    <header class="topbar">
+      <a class="brand" href="#">mocli</a>
+      <nav>
+        <a href="#why">Why</a>
+        <a href="#capabilities">Capabilities</a>
+        <a href="#start">Quickstart</a>
+        <a href="#links">Docs</a>
+      </nav>
+    </header>
+
+    <main class="shell">
+      <section class="terminal-window hero">
+        <div class="titlebar">
+          <span class="dot dot-red"></span>
+          <span class="dot dot-yellow"></span>
+          <span class="dot dot-green"></span>
+          <span class="title">terminal://mocli</span>
+        </div>
+        <div class="term-body">
+          <p class="line"><span class="prompt">$</span> mo --help</p>
+          <p class="output">Outlook + OneDrive automation in one command surface.</p>
+          <h1>Command-line workflows for mail, calendar, tasks, and drive.</h1>
+          <p class="subtle">
+            Built for operators and agents that want predictable CLI behavior, JSON output,
+            and one-time auth with refresh-token operation.
+          </p>
+          <div class="cta-row">
+            <a class="btn btn-primary" href="https://github.com/svaruag/mocli" target="_blank" rel="noreferrer">Open Repository</a>
+            <a class="btn btn-ghost" href="#start">Run the Flow</a>
+          </div>
+        </div>
+      </section>
+
+      <section id="why" class="section">
+        <h2>Why mocli</h2>
+        <div class="grid two">
+          <article class="panel">
+            <h3>Focused, not bloated</h3>
+            <p>Only the Microsoft workflows needed for daily automation: communications, schedules, tasks, and files.</p>
+          </article>
+          <article class="panel">
+            <h3>Agent-first execution</h3>
+            <p>JSON-first output, stable exit codes, and non-interactive flags keep orchestration reliable.</p>
+          </article>
+        </div>
+      </section>
+
+      <section id="capabilities" class="section">
+        <h2>Capabilities with realistic examples</h2>
+        <div class="grid four">
+          <article class="panel cmd-card">
+            <h3>Mail</h3>
+            <pre><code>mo mail list --max 10
+mo mail send \
+  --to ops-team@outlook.com \
+  --subject "Action items from Mar 7 incident review" \
+  --body "Please close remaining P1 follow-ups by EOD Friday."</code></pre>
+          </article>
+
+          <article class="panel cmd-card">
+            <h3>Calendar</h3>
+            <pre><code>mo calendar create \
+  --summary "Infra Postmortem: API Rate Limit Event" \
+  --from 2026-03-09T17:00:00Z \
+  --to 2026-03-09T17:45:00Z \
+  --description "Owners, timeline, and corrective actions."</code></pre>
+          </article>
+
+          <article class="panel cmd-card">
+            <h3>Tasks</h3>
+            <pre><code>mo tasks create \
+  --title "Prepare weekly revenue digest for leadership" \
+  --body "Include NA/EU breakdown and variance notes."
+mo tasks update &lt;task-id&gt; --status inProgress --importance high</code></pre>
+          </article>
+
+          <article class="panel cmd-card">
+            <h3>OneDrive</h3>
+            <pre><code>mo drive upload ./q1-finance-summary.pdf --conflict rename
+mo drive share &lt;item-id&gt; --to user --email cfo.office@outlook.com --role read
+mo drive download &lt;item-id&gt; --out ./archive/q1-finance-summary.pdf</code></pre>
+          </article>
+        </div>
+      </section>
+
+      <section id="start" class="section">
+        <h2>Quickstart flow</h2>
+        <div class="flow-wrap">
+          <div class="flow-step">
+            <span class="step-index">01</span>
+            <h3>Create app registration</h3>
+            <p>Create Entra app, note <code>client_id</code>, use tenant <code>common</code>.</p>
+          </div>
+          <div class="flow-arrow">→</div>
+          <div class="flow-step">
+            <span class="step-index">02</span>
+            <h3>Store credentials</h3>
+            <p><code>mo auth credentials ./entra-app.json</code></p>
+          </div>
+          <div class="flow-arrow">→</div>
+          <div class="flow-step">
+            <span class="step-index">03</span>
+            <h3>Device auth once</h3>
+            <p><code>mo auth add you@outlook.com --device</code></p>
+          </div>
+          <div class="flow-arrow">→</div>
+          <div class="flow-step">
+            <span class="step-index">04</span>
+            <h3>Run workflows</h3>
+            <p><code>mo mail list --max 5</code> and ship.</p>
+          </div>
+        </div>
+
+        <div class="terminal-window flow-script">
+          <div class="titlebar">
+            <span class="dot dot-red"></span>
+            <span class="dot dot-yellow"></span>
+            <span class="dot dot-green"></span>
+            <span class="title">quickstart.sh</span>
+          </div>
+          <div class="term-body">
+            <pre><code>git clone https://github.com/svaruag/mocli.git
+cd mocli
+go build -o ./mo ./cmd/mo
+
+./mo auth credentials ./entra-app.json
+./mo auth add you@outlook.com --device
+
+./mo --json --no-input --force tasks list --max 20</code></pre>
+          </div>
+        </div>
+      </section>
+
+      <section id="links" class="section">
+        <h2>Reference docs</h2>
+        <div class="link-grid">
+          <a href="https://github.com/svaruag/mocli/blob/main/README.md" target="_blank" rel="noreferrer">README</a>
+          <a href="https://github.com/svaruag/mocli/blob/main/docs/setup-entra-app.md" target="_blank" rel="noreferrer">Setup Entra App</a>
+          <a href="https://github.com/svaruag/mocli/blob/main/docs/authentication.md" target="_blank" rel="noreferrer">Authentication</a>
+          <a href="https://github.com/svaruag/mocli/blob/main/docs/commands.md" target="_blank" rel="noreferrer">Commands</a>
+          <a href="https://github.com/svaruag/mocli/blob/main/docs/examples.md" target="_blank" rel="noreferrer">Examples</a>
+          <a href="https://github.com/svaruag/mocli/blob/main/docs/troubleshooting.md" target="_blank" rel="noreferrer">Troubleshooting</a>
+        </div>
+      </section>
+    </main>
+
+    <footer class="footer">
+      <p>MIT License © 2026 Gaurav Singh</p>
+      <p>mocli is an independent open-source project and is not affiliated with Microsoft.</p>
+    </footer>
+  </body>
+</html>

@@ -323,9 +323,9 @@ make smoke-live
 - Smoke guide and env vars: `docs/smoke-tests.md`
 - Testing strategy: `docs/testing.md`
 
-## Publishing docs (GitHub Pages)
+## Publishing site (GitHub Pages)
 
-This repo is configured for MkDocs Material + GitHub Pages.
+This repo publishes a static website from `web/` via GitHub Pages.
 
 One-time setup in GitHub:
 
@@ -335,20 +335,15 @@ One-time setup in GitHub:
 Local preview:
 
 ```bash
-make docs-install
-make docs-serve
+make web-serve
 ```
 
-Production build check:
-
-```bash
-make docs-build
-```
+Then open `http://127.0.0.1:4173`.
 
 Deploy behavior:
 
 - Workflow: `.github/workflows/docs.yml`
-- Trigger: pushes to `main` that change `docs/**`, `mkdocs.yml`, or docs workflow/config
+- Trigger: pushes to `main` that change `web/**` or the workflow file
 - Published URL: `https://svaruag.github.io/mocli/`
 
 ## Global flags
