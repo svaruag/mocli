@@ -366,6 +366,16 @@ make smoke-live
 
 Design note: `docs/decisions/ADR-0004-onedrive-scope-and-limitations.md`.
 
+## Credits
+
+This project is inspired by `gogcli` by Peter Steinberger:
+
+- `https://github.com/steipete/gogcli`
+
+## License
+
+MIT License. See `LICENSE`.
+
 ## Documentation map
 
 Start with `docs/index.md`.
