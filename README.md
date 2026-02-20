@@ -323,6 +323,34 @@ make smoke-live
 - Smoke guide and env vars: `docs/smoke-tests.md`
 - Testing strategy: `docs/testing.md`
 
+## Publishing docs (GitHub Pages)
+
+This repo is configured for MkDocs Material + GitHub Pages.
+
+One-time setup in GitHub:
+
+1. Open `Settings -> Pages`
+2. Under `Build and deployment`, set `Source` to `GitHub Actions`
+
+Local preview:
+
+```bash
+make docs-install
+make docs-serve
+```
+
+Production build check:
+
+```bash
+make docs-build
+```
+
+Deploy behavior:
+
+- Workflow: `.github/workflows/docs.yml`
+- Trigger: pushes to `main` that change `docs/**`, `mkdocs.yml`, or docs workflow/config
+- Published URL: `https://svaruag.github.io/mocli/`
+
 ## Global flags
 
 - `--json`

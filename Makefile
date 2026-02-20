@@ -1,4 +1,4 @@
-.PHONY: build test fmt smoke-live
+.PHONY: build test fmt smoke-live docs-install docs-serve docs-build
 
 build:
 	go build ./cmd/mo
@@ -11,3 +11,12 @@ fmt:
 
 smoke-live:
 	./scripts/smoke-live.sh
+
+docs-install:
+	pip install -r requirements-docs.txt
+
+docs-serve:
+	mkdocs serve
+
+docs-build:
+	mkdocs build --strict

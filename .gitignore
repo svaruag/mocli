@@ -11,3 +11,4 @@ config.json
 keyring/
 plans/
 .mocli-internal/
+site/
